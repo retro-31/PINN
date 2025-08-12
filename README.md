@@ -25,7 +25,7 @@ The repository is organized into a core `pinn_lib` package and a `configs` direc
 1. **Clone the repository:**
 
     ```bash
-    git clone <your-repo-url>
+    git clone https://github.com/retro-31/PINN.git
     cd PINN
     ```
 

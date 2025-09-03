@@ -17,16 +17,12 @@ Features:
 - 1D and 2D spatial domains
 - Scalar and vector field solutions
 - Penalty method for boundary condition enforcement
-- Lagrange multiplier method for boundary condition enforcement (1D steady-state only)
 
 The network can handle various PDE types including:
 - Burgers' equation (time-dependent)
 - 1D steady-state diffusion equations  
 - 2D Poisson equations (scalar fields)
 - 2D potential flow problems (vector fields)
-
-Supports both penalty method and Lagrange multiplier method for boundary conditions.
-Note: Lagrange multiplier method is only supported for 1D steady-state problems.
 """
     def __init__(self, layers, config):
         super().__init__()
@@ -34,9 +30,6 @@ Note: Lagrange multiplier method is only supported for 1D steady-state problems.
         self.config = config
         self.problem_type = getattr(config, 'PROBLEM_TYPE', 'time_dependent')
         self.field_type = getattr(config, 'FIELD_TYPE', 'scalar')
-        
-        # Boundary condition enforcement method
-        self.bc_method = getattr(config, 'BC_METHOD', 'penalty')  # 'penalty' or 'lagrange'
         
         # For time-dependent problems (backward compatibility)
         if hasattr(config, 'NU'):
@@ -47,27 +40,17 @@ Note: Lagrange multiplier method is only supported for 1D steady-state problems.
         self.linears = nn.ModuleList(linears)
         self.activation = nn.Tanh()
         
-        # Initialize Lagrange multiplier parameters if using Lagrange method
-        if self.bc_method == 'lagrange':
-            self._init_lagrange_multipliers()
+        # Lagrangian multipliers (will be initialized in the trainer if needed)
+        self.lagrange_multipliers = None
         
         self.init_weights()
-
-    def _init_lagrange_multipliers(self):
-        """Initialize Lagrange multiplier parameters for boundary conditions."""
-        # Only support 1D problems with Lagrange multipliers
-        if self.problem_type != 'steady_state_1d':
-            raise ValueError(f"Lagrange multiplier method only supported for 1D steady-state problems, got: {self.problem_type}")
         
-        # 1D problems typically need fewer multipliers (left & right boundaries)
-        num_multipliers = getattr(self.config, 'NUM_LAGRANGE_MULTIPLIERS', 2)
-        
-        # Create learnable Lagrange multiplier parameters
+    def init_lagrange_multipliers(self, num_bc_points, device):
+        """Initialize Lagrange multipliers for boundary conditions."""
         self.lagrange_multipliers = nn.Parameter(
-            torch.zeros(num_multipliers, device=self.config.DEVICE, requires_grad=True)
+            torch.zeros(num_bc_points, 1, device=device, requires_grad=True)
         )
-        
-        print(f"Initialized {num_multipliers} Lagrange multipliers for BC enforcement")
+        return self.lagrange_multipliers
 
     def init_weights(self):
         for m in self.linears:
@@ -90,60 +73,18 @@ Note: Lagrange multiplier method is only supported for 1D steady-state problems.
         
         Args:
             x: Input points
-            x_bc: Boundary condition points (only needed for Lagrange method)
-            u_bc: Boundary condition values (only needed for Lagrange method)
+            x_bc: Boundary condition points (not used in penalty method)
+            u_bc: Boundary condition values (not used in penalty method)
         
         Returns:
             Network output with boundary conditions enforced
         """
-        if self.bc_method == 'penalty' or x_bc is None:
-            # Standard forward pass (penalty method handles BCs in loss)
-            return self.forward(x)
-        else:
-            # Lagrange multiplier method: modify output to satisfy BCs
-            return self._enforce_bc_lagrange(x, x_bc, u_bc)
-    
-    def _enforce_bc_lagrange(self, x, x_bc, u_bc):
-        """
-        Enforce boundary conditions using Lagrange multipliers.
-        Only supports 1D steady-state problems.
-        """
-        u_base = self.forward(x)
-        
-        if self.problem_type == 'steady_state_1d':
-            return self._enforce_bc_lagrange_1d(x, x_bc, u_bc, u_base)
-        else:
-            raise ValueError(f"Lagrange multiplier method only supported for 1D steady-state problems, got: {self.problem_type}")
-    
-    def _enforce_bc_lagrange_1d(self, x, x_bc, u_bc, u_base):
-        """Enforce 1D boundary conditions using Lagrange multipliers."""
-        # For 1D problems with Dirichlet BCs at x=0 and x=1
-        # Modify solution: u(x) = u_base(x) + λ₁*φ₁(x) + λ₂*φ₂(x)
-        # where φᵢ(x) are basis functions that enforce BCs
-        
-        # Use simple polynomial basis functions
-        x_normalized = x  # Assuming x is already in [0,1]
-        
-        # Basis functions: φ₁(x) = x(1-x), φ₂(x) = x²(1-x)
-        phi1 = x_normalized * (1 - x_normalized)
-        phi2 = x_normalized**2 * (1 - x_normalized)
-        
-        # Correction term using first two Lagrange multipliers
-        if len(self.lagrange_multipliers) >= 2:
-            correction = (self.lagrange_multipliers[0] * phi1 + 
-                         self.lagrange_multipliers[1] * phi2)
-        else:
-            correction = 0
-        
-        # For homogeneous Dirichlet BCs (u=0 at boundaries), use scaling
-        boundary_scaling = x_normalized * (1 - x_normalized)
-        
-        return u_base * boundary_scaling + correction
+        # Standard forward pass (penalty method handles BCs in loss)
+        return self.forward(x)
     
     def get_pde_residual(self, x_f, x_bc=None, u_bc=None):
         """
         Computes the PDE residual based on problem type.
-        For Lagrange multiplier method, pass boundary condition data.
         """
         if self.problem_type == 'time_dependent':
             return self._get_burgers_residual(x_f, x_bc, u_bc)

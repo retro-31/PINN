@@ -55,9 +55,16 @@ N_F = 10000  # Number of collocation points
 LAYERS = [2, 50, 50, 50, 50, 1]
 
 # --- Training Configuration ---
-ADAM_EPOCHS = 10000
-LBFGS_EPOCHS = 2000
+ADAM_EPOCHS = 5000
+LBFGS_EPOCHS = 500
 LEARNING_RATE = 1e-3
+
+# --- Boundary Condition Enforcement Method ---
+# Alpha blending parameter: 0 = pure penalty method, 1 = pure Lagrangian method
+LAGRANGIAN_ALPHA = 1.0  # Using a blend with more penalty method for stability
+LAGRANGIAN_STEP_SIZE = 0.005  # Smaller step size for more stable multiplier updates
+BC_WEIGHT = 1.0  # Weight for boundary condition terms
+PDE_WEIGHT = 1.0  # Weight for PDE residual terms
 
 # --- Random Seed ---
 SEED = 1234

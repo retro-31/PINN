@@ -1,336 +1,175 @@
-# Physics-Informed Neural Networks (PINNs) for Mechanical Engineering
+# Physics-Informed Neural Networks (PINNs) Framework
 
-A comprehensive implementation of Physics-Informed Neural Networks for solving partial differential equations in mechanical engineering applications. This framework provides both penalty method and Lagrange multiplier approaches for boundary condition enforcement.
+This repository implements a modular framework for solving partial differential equations (PDEs) using Physics-Informed Neural Networks (PINNs). The framework focuses on mechanical engineering applications including heat transfer, fluid dynamics, and structural analysis.
 
-## 🚀 Features
+## Overview
 
-### Problem Types Supported
+PINNs are neural networks trained to satisfy both the governing equations of a physical system and its boundary conditions. This approach allows solving PDEs without traditional numerical methods by leveraging the universal approximation capability of neural networks.
 
-- **Time-dependent problems**: Burgers' equation for fluid dynamics
-- **1D steady-state problems**: Heat conduction in rods with heat generation
-- **2D steady-state scalar**: Heat transfer in plates
-- **2D steady-state vector**: Potential flow around cylinders
+## Features
 
-### Boundary Condition Methods
+- Modular architecture for different types of PDEs
+- Support for both time-dependent and steady-state problems
+- 1D and 2D spatial domains
+- Scalar and vector field solutions
+- Multiple boundary condition enforcement techniques
+- Visualization tools for each problem type
 
-- **Penalty Method**: Works for all problem types, enforces BCs through loss function
-- **Lagrange Multiplier Method**: Exact BC satisfaction for 1D steady-state problems
+## Problem Types
 
-### Engineering Applications
+The framework includes the following pre-configured problems:
 
-- Heat conduction analysis in steel rods
-- Thermal management in aluminum plates
-- Aerodynamic flow analysis around cylinders
-- Viscous fluid dynamics (Burgers' equation)
+1. **Burgers Equation (`burgers`)**:  
+   - Time-dependent viscous Burgers equation  
+   - Fundamental fluid dynamics application
 
-## 📁 Project Structure
+2. **1D Steady State (`1d_steady`)**:  
+   - Heat conduction in a steel rod with internal heat generation  
+   - Fixed temperature at both ends (Dirichlet boundary conditions)
 
-```text
-PINN/
-├── main.py                 # Entry point and problem orchestration
-├── pinn_lib/              # Core PINN implementation
-│   ├── models.py          # Neural network + physics integration
-│   ├── training.py        # Training loops and loss functions
-│   ├── data.py           # Training data generation
-│   └── utils.py          # Visualization utilities
-├── configs/              # Problem-specific configurations
-│   ├── burgers_equation.py           # Time-dependent fluid dynamics
-│   ├── steady_state_1d.py            # 1D heat conduction (penalty)
-│   ├── steady_state_1d_lagrange.py   # 1D heat conduction (Lagrange)
-│   ├── steady_state_2d_scalar.py     # 2D heat transfer
-│   └── steady_state_2d_vector.py     # 2D flow problems
-└── requirements.txt       # Python dependencies
-```
+3. **2D Scalar Field (`2d_scalar`)**:  
+   - 2D heat transfer in an aluminum plate  
+   - Applications include CPU heat spreaders and electronic cooling
 
-## 🛠️ Installation
+4. **2D Vector Field (`2d_vector`)**:  
+   - Aerodynamic flow around a circular cylinder  
+   - Potential flow model
 
-### Prerequisites
+## Dependencies
 
-- Python 3.8+
-- CUDA-capable GPU (optional but recommended)
+- Python 3.x
+- PyTorch
+- NumPy
+- SciPy
+- pyDOE
+- Matplotlib
 
-### Setup
+Install all dependencies with:
 
 ```bash
-# Clone the repository
-git clone https://github.com/retro-31/PINN.git
-cd PINN
-
-# Create conda environment
-conda create -n pinn python=3.10
-conda activate pinn
-
-# Install dependencies
 pip install -r requirements.txt
-
-# For GPU support (optional)
-conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
 ```
 
-## 🎯 Quick Start
+## Usage
 
-### List Available Problems
+### Basic Commands
 
-```bash
-python main.py --list
-```
+1. **List all available problems**:
 
-### Run Individual Problems
+   ```bash
+   python3 main.py --list
+   ```
 
-```bash
-# Time-dependent fluid dynamics
-python main.py --problem burgers
+2. **Run a specific problem**:
 
-# 1D heat conduction (penalty method)
-python main.py --problem 1d_steady
+   ```bash
+   python3 main.py --problem PROBLEM_NAME
+   ```
+   
+   Where `PROBLEM_NAME` is one of: `burgers`, `1d_steady`, `2d_scalar`, `2d_vector`
 
-# 1D heat conduction (Lagrange multiplier method)
-python main.py --problem 1d_lagrange
+3. **Run all problems sequentially**:
 
-# 2D heat transfer in plate
-python main.py --problem 2d_scalar
+   ```bash
+   python3 main.py --problem all
+   ```
 
-# 2D flow around cylinder
-python main.py --problem 2d_vector
+4. **Skip visualization plots**:
 
-# Run all problems sequentially
-python main.py --problem all
-```
+   ```bash
+   python3 main.py --problem PROBLEM_NAME --no-plots
+   ```
 
-### Run Without Plots
+### Examples
 
-```bash
-python main.py --problem 1d_steady --no-plots
-```
+1. Run the Burgers equation problem:
 
-## 📊 Example Results
+   ```bash
+   python3 main.py --problem burgers
+   ```
 
-### 1D Heat Conduction
+2. Run the 1D heat conduction problem:
 
-**Problem**: Steel rod with sinusoidal heat generation
+   ```bash
+   python3 main.py --problem 1d_steady
+   ```
 
-- **PDE**: `d²T/dx² = -Q·sin(πx)`
-- **BCs**: `T(0) = T(1) = 0`
-- **Analytical**: `T(x) = (Q/π²)·sin(πx)`
+## Code Structure
 
-Both penalty and Lagrange methods achieve:
+- **`main.py`**: Entry point for running simulations
+- **`configs/`**: Configuration files for each problem type
+  - `burgers_equation.py`: Time-dependent Burgers equation
+  - `steady_state_1d.py`: 1D heat conduction
+  - `steady_state_2d_scalar.py`: 2D heat transfer
+  - `steady_state_2d_vector.py`: Flow around cylinder
+- **`pinn_lib/`**: Core library implementing the PINN framework
+  - `data.py`: Data generation for training
+  - `models.py`: Neural network architecture and PDE residuals
+  - `training.py`: Training loop with optimization methods
+  - `utils.py`: Visualization and utility functions
 
-- BC Loss: ~10⁻¹⁰ (exact satisfaction)
-- PDE Loss: ~10⁻⁶ (excellent physics compliance)
+## Technical Details
 
-### 2D Heat Transfer
+### Boundary Condition Enforcement
 
-**Problem**: Aluminum plate with internal heat generation
+The framework implements three approaches for enforcing boundary conditions:
 
-- **PDE**: `∇²T = -Q·sin(πx)·sin(πy)`
-- **BCs**: `T = 0` on all boundaries
-- **Result**: Smooth temperature distribution with maximum at center
+1. **Penalty Method**: Adds boundary conditions as weighted terms in the loss function (default)
+2. **Lagrangian Method**: Uses Lagrange multipliers to enforce constraints
+3. **Hybrid Approach**: Blends penalty and Lagrangian methods using an alpha parameter
 
-### 2D Flow Analysis
+### Training Process
 
-**Problem**: Potential flow around circular cylinder
+The training process consists of two phases:
 
-- **PDE**: `∇²φ = 0` (Laplace equation)
-- **BCs**: No-penetration on cylinder, uniform flow at far-field
-- **Result**: Classic flow pattern with stagnation points
+1. **Adam Optimization**: Used for initial training due to its robustness
+2. **L-BFGS Optimization**: Applied for fine-tuning due to its faster convergence
 
-## 🧠 Technical Details
+### PDE Residuals
 
-### Neural Network Architecture
+PDE residuals are computed using automatic differentiation:
 
-- **Activation**: Hyperbolic tangent (smooth derivatives for PDE computation)
-- **Initialization**: Xavier uniform for stable training
-- **Automatic Differentiation**: PyTorch autograd for exact derivatives
+- **Time-dependent PDEs**: Computes temporal and spatial derivatives
+- **Steady-state PDEs**: Computes Laplacian and other spatial derivatives
+- **Vector field problems**: Uses potential flow formulation
 
-### Training Strategy
+## Configuration Parameters
 
-1. **Adam Optimizer**: Global exploration phase (5000-15000 epochs)
-2. **L-BFGS Optimizer**: Local convergence phase (1000-3000 epochs)
+Each problem has its own configuration file with parameters such as:
 
-### BC Enforcement Methods
+- **Domain parameters**: Spatial and temporal ranges
+- **PDE parameters**: Coefficients, source terms
+- **Network architecture**: Layer sizes
+- **Training parameters**: Epochs, learning rate
+- **Boundary condition parameters**: Types, values
+- **Physical parameters**: Material properties, etc.
 
-#### Penalty Method (Default)
+## Customization
 
-```python
-# Loss function includes BC penalty
-loss = bc_weight * loss_bc + pde_weight * loss_pde
-```
+To create a new problem:
 
-- ✅ Works for all problem types
-- ⚠️ Requires penalty weight tuning
+1. Create a new configuration file in the `configs/` directory
+2. Define all necessary parameters (see existing files for examples)
+3. Extend the `PROBLEM_CONFIGS` dictionary in `main.py` if needed
 
-#### Lagrange Multiplier Method (1D only)
+## Computational Performance
 
-```python
-# Modified network output
-u(x) = u_base(x) * x(1-x) + Σ λᵢ φᵢ(x)
-```
+Training time depends on:
 
-- ✅ Exact BC satisfaction
-- ✅ No weight tuning needed
-- ❌ Limited to 1D steady-state problems
+- Problem complexity
+- Neural network size
+- Number of training points
+- Hardware (CPU/GPU)
 
-## 🔧 Configuration System
+For reference, on a modern CPU:
 
-Each problem is defined by a configuration file. Example for 1D heat conduction:
+- 1D problems typically train in seconds to minutes
+- 2D problems may take several minutes
 
-```python
-# configs/steady_state_1d.py
+GPU acceleration is automatically used if available.
 
-# Physical parameters
-THERMAL_CONDUCTIVITY = 50.0  # W/m·K
-HEAT_GENERATION_RATE = 1000.0  # W/m³
+## References
 
-# Domain
-X_RANGE = [0.0, 1.0]
+This implementation is based on the PINN methodology introduced in:
 
-# Boundary conditions
-BC_LEFT = 0.0   # T(0) = 0°C
-BC_RIGHT = 0.0  # T(1) = 0°C
-
-# Network architecture
-LAYERS = [1, 20, 20, 20, 1]
-
-# Training parameters
-ADAM_EPOCHS = 5000
-LBFGS_EPOCHS = 1000
-LEARNING_RATE = 0.001
-
-# Method selection
-BC_METHOD = "penalty"  # or "lagrange"
-```
-
-## 📈 Performance Metrics
-
-### Typical Training Times (RTX 3080)
-
-- 1D problems: 15-45 seconds
-- 2D scalar: 60-100 seconds  
-- 2D vector: 200-400 seconds
-
-### Accuracy Metrics
-
-- **BC Error**: 10⁻⁶ to 10⁻¹⁰ (excellent)
-- **PDE Residual**: 10⁻⁵ to 10⁻⁶ (very good)
-- **L² Error vs Analytical**: 10⁻³ to 10⁻⁴ (good)
-
-## 🔬 Mathematical Background
-
-### Physics-Informed Neural Networks
-
-PINNs solve PDEs by minimizing a loss function that includes:
-
-1. **PDE Residual**: `∫ |PDE(u_NN)|² dx`
-2. **Boundary Conditions**: `∫ |u_NN - u_BC|² ds`
-3. **Initial Conditions**: `∫ |u_NN(t=0) - u₀|² dx`
-
-### Automatic Differentiation
-
-```python
-# Example: Computing ∂²u/∂x² for heat equation
-u = model(x)
-u_x = torch.autograd.grad(u, x, create_graph=True)[0]
-u_xx = torch.autograd.grad(u_x, x, create_graph=True)[0]
-```
-
-## 🎨 Visualization Features
-
-- **1D Plots**: Solution vs analytical comparison with error metrics
-- **2D Contours**: Temperature/potential distributions with colorbars
-- **Error Analysis**: Quantitative accuracy assessment
-- **Physical Interpretation**: Engineering context and parameter values
-
-## 🧪 Adding New Problems
-
-1. **Create Configuration File**:
-
-```python
-# configs/my_problem.py
-PROBLEM_TYPE = "steady_state_1d"
-FIELD_TYPE = "scalar"
-# ... define parameters
-```
-
-1. **Add to Main Script**:
-
-```python
-# main.py
-PROBLEM_CONFIGS['my_problem'] = 'my_problem'
-```
-
-1. **Implement PDE Residual** (if needed):
-
-```python
-# pinn_lib/models.py
-def _get_my_pde_residual(self, x_f, x_bc=None, u_bc=None):
-    # Implement your PDE
-    pass
-```
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**CUDA Out of Memory**:
-
-```python
-# Reduce batch size in config
-N_F = 1000  # Instead of 2000
-```
-
-**Poor Convergence**:
-
-```python
-# Increase network size or training epochs
-LAYERS = [1, 50, 50, 50, 1]
-ADAM_EPOCHS = 10000
-```
-
-**BC Not Satisfied**:
-
-```python
-# Increase BC weight for penalty method
-BC_WEIGHT = 10.0
-# Or use Lagrange method for 1D problems
-BC_METHOD = "lagrange"
-```
-
-### Validation Tools
-
-```bash
-# Check BC satisfaction
-python main.py --problem 1d_lagrange --no-plots | grep "BC Loss"
-
-# Compare methods
-python main.py --problem 1d_steady && python main.py --problem 1d_lagrange
-```
-
-## 📚 References
-
-- Raissi, M., Perdikaris, P., & Karniadakis, G. E. (2019). Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations. *Journal of Computational Physics*, 378, 686-707.
-
-- Lu, L., Meng, X., Mao, Z., & Karniadakis, G. E. (2021). DeepXDE: A deep learning library for solving differential equations. *SIAM Review*, 63(1), 208-228.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-pde`)
-3. Commit changes (`git commit -am 'Add new PDE solver'`)
-4. Push to branch (`git push origin feature/new-pde`)
-5. Create Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🏆 Acknowledgments
-
-- PyTorch team for automatic differentiation framework
-- Original PINN authors (Raissi et al.) for the foundational methodology
-- Mechanical engineering community for practical problem formulations
-
----
-
-**For questions and support**: Open an issue or contact the maintainers.
-
-**Citation**: If you use this code in your research, please cite the original PINN paper and this implementation.
+- Raissi, M., Perdikaris, P., & Karniadakis, G. E. (2019). Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations. Journal of Computational Physics, 378, 686-707.

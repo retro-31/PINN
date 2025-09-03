@@ -51,9 +51,16 @@ N_F = 1000  # Number of collocation points for PDE residual
 LAYERS = [1, 20, 20, 20, 1]
 
 # --- Training Configuration ---
-ADAM_EPOCHS = 5000
-LBFGS_EPOCHS = 1000
+ADAM_EPOCHS = 5000  # Increase Adam epochs since we'll skip L-BFGS
+LBFGS_EPOCHS = 500  # Disable L-BFGS for Lagrangian method due to stability issues
 LEARNING_RATE = 1e-3
+
+# --- Boundary Condition Enforcement Method ---
+# Alpha blending parameter: 0 = pure penalty method, 1 = pure Lagrangian method
+LAGRANGIAN_ALPHA = 0.0  # Using a blend with more penalty method for stability
+LAGRANGIAN_STEP_SIZE = 0.005  # Smaller step size for more stable multiplier updates
+BC_WEIGHT = 1.0  # Weight for boundary condition terms
+PDE_WEIGHT = 1.0  # Weight for PDE residual terms
 
 # --- Random Seed ---
 SEED = 1234

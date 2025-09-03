@@ -57,9 +57,16 @@ N_F = 15000  # Collocation points (excludes cylinder interior)
 LAYERS = [2, 60, 60, 60, 60, 60, 1]  # Output is potential φ
 
 # --- Training Configuration ---
-ADAM_EPOCHS = 15000
-LBFGS_EPOCHS = 3000
+ADAM_EPOCHS = 5000
+LBFGS_EPOCHS = 500
 LEARNING_RATE = 1e-3
+
+# --- Boundary Condition Enforcement Method ---
+# Alpha blending parameter: 0 = pure penalty method, 1 = pure Lagrangian method
+LAGRANGIAN_ALPHA = 0.0  # Using a blend of penalty and Lagrangian methods
+LAGRANGIAN_STEP_SIZE = 0.001  # Smaller step size for stable multiplier updates
+BC_WEIGHT = 1.0  # Weight for boundary condition terms
+PDE_WEIGHT = 1.0  # Weight for PDE residual terms
 
 # --- Random Seed ---
 SEED = 1234

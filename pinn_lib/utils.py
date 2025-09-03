@@ -22,27 +22,10 @@ def plot_solution(model, config):
 
 def _get_model_prediction(model, x_test, config):
     """
-    Get model prediction using appropriate method based on BC enforcement.
+    Get model prediction.
     """
-    bc_method = getattr(config, 'BC_METHOD', 'penalty')
-    
-    if bc_method == 'penalty':
-        # Standard forward pass
-        return model(x_test.to(config.DEVICE))
-    else:
-        # For Lagrange method, we need to provide BC data for proper enforcement
-        # Create boundary condition data based on problem type
-        if getattr(config, 'PROBLEM_TYPE', '') == 'steady_state_1d':
-            # Create boundary points and values for 1D problem
-            x_bc = torch.tensor([[config.X_RANGE[0]], [config.X_RANGE[1]]], 
-                               dtype=torch.float32, device=config.DEVICE)
-            u_bc = torch.tensor([[getattr(config, 'BC_LEFT', 0.0)], 
-                               [getattr(config, 'BC_RIGHT', 0.0)]], 
-                               dtype=torch.float32, device=config.DEVICE)
-            return model.forward_with_bc_enforcement(x_test.to(config.DEVICE), x_bc, u_bc)
-        else:
-            # For other problems, fall back to standard forward pass
-            return model(x_test.to(config.DEVICE))
+    # Standard forward pass
+    return model(x_test.to(config.DEVICE))
 
 def plot_time_dependent_solution(model, config):
     """Plot time-dependent solution (original)."""
@@ -174,11 +157,10 @@ def plot_steady_2d_vector_solution(model, config):
     
     # Compute velocity field
     if hasattr(model, 'X_bc_train') and hasattr(model, 'u_bc_train'):
-        # For Lagrange method - use gradient-enabled computation
+        # Use gradient-enabled computation
         X_plot_grad = X_plot.to(config.DEVICE).requires_grad_(True)
         
-        # Use the basic network forward pass (without BC enforcement for visualization)
-        # Since training already converged with exact BC satisfaction
+        # Use the basic network forward pass
         phi = model.forward(X_plot_grad)
         
         # Compute velocity components
@@ -187,7 +169,7 @@ def plot_steady_2d_vector_solution(model, config):
         v_vel = phi_grad[:, 1:2]  # ∂φ/∂y
         velocity = torch.cat([u_vel, v_vel], dim=1).cpu().detach()
     else:
-        # Fallback for penalty method
+        # Fallback for other methods
         with torch.no_grad():
             velocity = model.get_velocity_field(X_plot.to(config.DEVICE)).cpu()
     
@@ -210,8 +192,8 @@ def plot_steady_2d_vector_solution(model, config):
     # Create plots
     fig, axes = plt.subplots(1, 2, figsize=(18, 7))
     
-    # Vector field plot - simplified for Lagrange method
-    # Since training converged successfully, just show domain coverage
+    # Vector field plot
+    # Show domain coverage
     valid_mask = ~torch.isnan(U_vel)
     speed = torch.sqrt(U_vel**2 + V_vel**2)
     
@@ -236,20 +218,18 @@ def plot_steady_2d_vector_solution(model, config):
     axes[0].set_xlabel('x/D (Cylinder Diameters)', fontsize=12)
     axes[0].set_ylabel('y/D (Cylinder Diameters)', fontsize=12)
     axes[0].set_title('Velocity Field Around Circular Cylinder\n' + 
-                      r'Potential Flow: $\nabla^2 \phi = 0$, $\vec{u} = \nabla \phi$ (Lagrange Method)', fontsize=14)
+                      r'Potential Flow: $\nabla^2 \phi = 0$, $\vec{u} = \nabla \phi$', fontsize=14)
     axes[0].set_aspect('equal')
     axes[0].grid(True, alpha=0.3)
     
-    # Streamlines plot - simplified for Lagrange method
-    # Since the training shows exact BC enforcement, just show a summary
-    axes[1].text(0.5, 0.5, 'Lagrange Multiplier Method\n\n' +
-                           f'✅ Exact BC Enforcement\n' +
-                           f'BC Loss: 0.0000e+00\n' +
-                           f'PDE Loss: ~10⁻⁹\n\n' +
+    # Streamlines plot
+    # Show a summary of the flow
+    axes[1].text(0.5, 0.5, 'Penalty Method\n\n' +
+                           f'BC Enforcement via Loss Function\n' +
                            f'Cylinder at center with\n' +
                            f'radius = {config.CYLINDER_RADIUS:.1f}\n' +
                            f'Far-field flow conditions\n' +
-                           f'enforced exactly',
+                           f'enforced via penalty',
                  transform=axes[1].transAxes, ha='center', va='center',
                  fontsize=12, bbox=dict(boxstyle="round,pad=0.3", facecolor="lightblue", alpha=0.8))
     
@@ -258,7 +238,7 @@ def plot_steady_2d_vector_solution(model, config):
     
     axes[1].set_xlabel('x/D (Cylinder Diameters)', fontsize=12)
     axes[1].set_ylabel('y/D (Cylinder Diameters)', fontsize=12)
-    axes[1].set_title('Lagrange Multiplier Results\n(Exact Boundary Condition Enforcement)', fontsize=14)
+    axes[1].set_title('Penalty Method Results\n(Boundary Condition Enforcement via Loss)', fontsize=14)
     axes[1].set_aspect('equal')
     axes[1].grid(True, alpha=0.3)
     

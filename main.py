@@ -38,7 +38,6 @@ from pinn_lib.utils import plot_solution
 PROBLEM_CONFIGS: Dict[str, str] = {
     'burgers': 'burgers_equation',
     '1d_steady': 'steady_state_1d', 
-    '1d_lagrange': 'steady_state_1d_lagrange',
     '2d_scalar': 'steady_state_2d_scalar',
     '2d_vector': 'steady_state_2d_vector',
 }
@@ -47,7 +46,6 @@ PROBLEM_CONFIGS: Dict[str, str] = {
 PROBLEM_DESCRIPTIONS: Dict[str, str] = {
     'burgers': 'Time-dependent viscous Burgers equation - Fundamental fluid dynamics',
     '1d_steady': '1D heat conduction in steel rod (penalty method)',
-    '1d_lagrange': '1D heat conduction in steel rod (Lagrange multiplier method)',
     '2d_scalar': '2D heat transfer in aluminum plate (penalty method)',
     '2d_vector': 'Aerodynamic flow around circular cylinder (penalty method)',
 }
@@ -120,6 +118,14 @@ def run_single_problem(problem_key: str, show_plots: bool = True) -> bool:
 
         # --- Step 3: Train Model ---
         print("\nStep 3: Training model...")
+        
+        # Display boundary condition enforcement method
+        lagrangian_alpha = getattr(config, 'LAGRANGIAN_ALPHA', 0.0)
+        if lagrangian_alpha > 0:
+            print(f"  Using hybrid method: {(1-lagrangian_alpha)*100:.0f}% penalty, {lagrangian_alpha*100:.0f}% Lagrangian")
+        else:
+            print("  Using penalty method for boundary conditions")
+            
         trainer = Trainer(pinn_model, config, training_data)
         trainer.train()
         
@@ -190,7 +196,6 @@ def main():
 Examples:
   python main.py --problem burgers       # Run time-dependent Burgers equation
   python main.py --problem 1d_steady     # Run 1D heat conduction (penalty method)
-  python main.py --problem 1d_lagrange   # Run 1D heat conduction (Lagrange multipliers)
   python main.py --problem 2d_scalar     # Run 2D heat transfer (penalty method)
   python main.py --problem 2d_vector     # Run aerodynamic flow problem (penalty method)
   python main.py --problem all           # Run all problems sequentially
@@ -203,7 +208,7 @@ For backward compatibility:
     
     parser.add_argument(
         '--problem', type=str, 
-        help='Problem type to run (burgers, 1d_steady, 1d_lagrange, 2d_scalar, 2d_vector, all)'
+        help='Problem type to run (burgers, 1d_steady, 2d_scalar, 2d_vector, all)'
     )
     
     parser.add_argument(
